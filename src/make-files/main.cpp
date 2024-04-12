@@ -14,7 +14,7 @@ static std::mt19937 eng{ std::random_device()() };
 
 // The data we write to the files comes from this buffer. The goal is to have a decent number of repeating sequences
 // of identical bytes of varying lengths
-std::byte data_buffer[256];
+std::byte data_buffer[512];
 
 std::optional<std::size_t> parse_size(const char* data)
 {
@@ -57,12 +57,12 @@ int main(int argc, char** argv)
             return -1;
         }
 
-        std::uniform_int_distribution<std::size_t> lenDist(0, 256);
+        std::uniform_int_distribution<std::size_t> lenDist(0, std::size(data_buffer));
         while (*size > 0)
         {
             auto len = static_cast<DWORD>(std::min(*size, lenDist(eng)));
 
-            std::uniform_int_distribution<DWORD> startDist(0, 256 - len);
+            std::uniform_int_distribution<DWORD> startDist(0, std::size(data_buffer) - len);
             auto start = startDist(eng);
 
             DWORD bytesWritten;

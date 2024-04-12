@@ -10,12 +10,6 @@
 
 #include <Windows.h>
 
-static std::mt19937 eng{ std::random_device()() };
-
-// The data we write to the files comes from this buffer. The goal is to have a decent number of repeating sequences
-// of identical bytes of varying lengths
-std::byte data_buffer[512];
-
 std::optional<std::size_t> parse_size(const char* data)
 {
     auto last = data + ::strlen(data);
@@ -31,12 +25,20 @@ std::optional<std::size_t> parse_size(const char* data)
 
 int main(int argc, char** argv)
 {
+    std::mt19937 eng{ std::random_device()() };
+
+    // The data we write to the files comes from this buffer
+    std::byte data_buffer[260];
+
     // Initialize the data buffer
     std::uniform_int_distribution<int> byteDist(0, 255);
     for (auto& byte : data_buffer)
     {
         byte = static_cast<std::byte>(byteDist(eng));
     }
+
+    std::uniform_int_distribution<std::size_t> lengthDist(100, std::size(data_buffer));
+    auto copyLength = lengthDist(eng);
 
     // Arguments are the number of bytes that we want in the file. Files are named 'file0', 'file1', etc.
     for (int i = 1; i < argc; ++i)
@@ -57,16 +59,11 @@ int main(int argc, char** argv)
             return -1;
         }
 
-        std::uniform_int_distribution<std::size_t> lenDist(0, std::size(data_buffer));
         while (*size > 0)
         {
-            auto len = static_cast<DWORD>(std::min(*size, lenDist(eng)));
-
-            std::uniform_int_distribution<DWORD> startDist(0, std::size(data_buffer) - len);
-            auto start = startDist(eng);
-
+            auto len = static_cast<DWORD>(std::min(*size, copyLength));
             DWORD bytesWritten;
-            if (!::WriteFile(handle, data_buffer + start, len, &bytesWritten, nullptr))
+            if (!::WriteFile(handle, data_buffer, len, &bytesWritten, nullptr))
             {
                 std::println("ERROR: Failed to write data to file{}", i);
                 ::CloseHandle(handle);

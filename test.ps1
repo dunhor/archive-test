@@ -7,24 +7,26 @@ pushd $TEST_DIR
 
 try
 {
-    $count0=1
-    $count1=4194305
-    $count2=8388609
-    $count3=12582913
-    $count4=16777217
+    $size0=0x00000001
+    $size1=0x00400000
+    $size2=0x00800000
+    $size3=0x01000000
+    $size4=0x02000000
+    $size5=0x04000000
+    $size6=0x08000000
     for ($i = 0; $i -lt 4194304; ++$i)
     {
         Write-Output "Iteration $i"
 
-        # Generate 5 files of each size, for a total of 25 files
-        Invoke-Expression "$MAKE_FILES $count0 $count0 $count0 $count0 $count0 $count1 $count1 $count1 $count1 $count1 $count2 $count2 $count2 $count2 $count2 $count3 $count3 $count3 $count3 $count3 $count4 $count4 $count4 $count4 $count4"
+        # Generate a file of each size, for a total of 5 files
+        Invoke-Expression "$MAKE_FILES $size0 $size1 $size2 $size3 $size4 $size5 $size6"
         if ($LASTEXITCODE -ne 0)
         {
             throw "Failed to make test files"
         }
 
         # Pack all files into a single RAR file
-        rar.exe a -ma4 test.rar file1 file2 file3 file4 file5 file6 file7 file8 file9 file10 file11 file12 file13 file14 file15 file16 file17 file18 file19 file20 file21 file22 file23 file24 file25 | Out-Null
+        rar.exe a -ma4 -m5 test.rar file1 file2 file3 file4 file5 file6 file7 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0)
         {
             throw "Failed to create test.rar"
@@ -39,7 +41,7 @@ try
         }
 
         # Verify the contents
-        for ($j = 1; $j -le 25; ++$j)
+        for ($j = 1; $j -le 7; ++$j)
         {
             $HashExpect = (Get-FileHash -Algorithm MD5 "file$j").Hash
             $HashExtract = (Get-FileHash -Algorithm MD5 "output\file$j").Hash
